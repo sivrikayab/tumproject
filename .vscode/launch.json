@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "spawn",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args": ["-r","fournitures","-o", "bench"],
+            "console": "integratedTerminal"
+        }
+    ]
+}

@@ -2,13 +2,21 @@ import os
 import argparse
 import logging
 from functools import wraps
+import numpy as np
 
 from cdp4_data_collection import CDP4DataCollection
 import geometry_msgs.msg as geom
 
+from geometry_msgs.msg import Pose
+from cv_bridge import CvBridge, CvBridgeError
+from gazebo_msgs.srv import GetModelState, GetWorldProperties, SpawnEntity, DeleteModel
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
+
+
 # Set logger configurations.
 LOG_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
 logging.basicConfig(filename='logs.log',
+                    filemode='w',
                     format=LOG_FORMAT,
                     level=logging.INFO)
 logger = logging.getLogger('spawn-model')
@@ -38,13 +46,23 @@ def generate_eqdis_pos():
 
     cache = []
     if not cache:
-        pos = CDP4DataCollection(path_to_models).generate_random_pose(x_std=1, y_std=1)
+        pos = _get_pose_at_origin()
         cache.append(pos)
         yield pos
     else:
         # Not implemented yet! TODO
         pass
 
+
+def _get_pose_at_origin():
+    orientation = quaternion_from_euler(0, 0, 0)
+    pose = Pose()
+    pose.position.x, pose.position.y, pose.position.z = 0, 0, 0.25
+    pose.orientation.x = orientation[0]
+    pose.orientation.y = orientation[1]
+    pose.orientation.z = orientation[2]
+    pose.orientation.w = orientation[3]
+    return pose
 
 @wrap_logger
 def spawn(object_name, room_name=""):
