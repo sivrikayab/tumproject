@@ -17,10 +17,10 @@ class CDP4DataCollection(object):
         # rospy.init_node('cdp4_data_collection')
         rospy.wait_for_service("/gazebo/get_world_properties")
 
-        self.__physics_state = rospy.ServiceProxy('/gazebo/get_world_properties',
+        self._physics_state = rospy.ServiceProxy('/gazebo/get_world_properties',
                                                   GetWorldProperties)
 
-        while self.__physics_state().sim_time < 2:
+        while self._physics_state().sim_time < 2:
             print "Waiting for simulation to be started"
             rospy.sleep(2)
 
@@ -30,24 +30,24 @@ class CDP4DataCollection(object):
         self.spawned_objects = []
 
         # ROS Subscribers
-        self.__image_sub = rospy.Subscriber("/icub/icub_model/left_eye_camera/image_raw", Image,
+        self._image_sub = rospy.Subscriber("/icub/icub_model/left_eye_camera/image_raw", Image,
                                             self.__image_callback, queue_size=1)
 
        # ROS Publishers
-        self.__set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState,
+        self._set_model_state_pub = rospy.Publisher("/gazebo/set_model_state", ModelState,
                                                      queue_size=1)      
-        self.__horizontal_pos_pub = rospy.Publisher("/icub/eye_version/pos", Float64, queue_size=1)
-        self.__vertical_pos_pub = rospy.Publisher("/icub/eye_tilt/pos", Float64, queue_size=1)
+        self._horizontal_pos_pub = rospy.Publisher("/icub/eye_version/pos", Float64, queue_size=1)
+        self._vertical_pos_pub = rospy.Publisher("/icub/eye_tilt/pos", Float64, queue_size=1)
 
         # ROS Services
         rospy.wait_for_service("gazebo/get_model_state", 10.0)
-        self.__get_pose_srv = rospy.ServiceProxy("gazebo/get_model_state", GetModelState)
+        self._get_pose_srv = rospy.ServiceProxy("gazebo/get_model_state", GetModelState)
 
         rospy.wait_for_service("gazebo/spawn_sdf_entity")
-        self.__spawn_model_srv = rospy.ServiceProxy("/gazebo/spawn_sdf_entity", SpawnEntity)
+        self._spawn_model_srv = rospy.ServiceProxy("/gazebo/spawn_sdf_entity", SpawnEntity)
 
         #rospy.wait_for_service("gazebo/delete_model")
-        #self.__delete_model_srv = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
+        #self._delete_model_srv = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
 
 
     def __image_callback(self, msg):
@@ -85,5 +85,5 @@ class CDP4DataCollection(object):
         /icub/eye_version/pos ROS topic
         """
         horizontal_position, vertical_position = self.__cart_to_ang(obj_pos)
-        self.__horizontal_pos_pub.publish(horizontal_position)
-        self.__vertical_pos_pub.publish(vertical_position)
+        self._horizontal_pos_pub.publish(horizontal_position)
+        self._vertical_pos_pub.publish(vertical_position)

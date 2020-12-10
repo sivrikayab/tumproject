@@ -6,7 +6,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args": ["-r","kitchen"],
+            "args": ["-o","kitchen/Refrigerator0", "-p", "0,0,0"],
             "console": "integratedTerminal"
         }
     ]

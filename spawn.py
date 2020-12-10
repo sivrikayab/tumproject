@@ -44,7 +44,8 @@ def _spawn_whole_room(room_name, layout_file="layout.yaml"):
     for model in yaml_file["Layout"]:
         position = model["position"].values()
         obj_name = model["model"]
-        _spawn_single_object(path_to_room + obj_name, position, object_name=obj_name)
+        obj_dir = path_to_room + obj_name + '/'
+        _spawn_single_object(obj_dir, position, object_name=obj_name)
         
 def _spawn_single_object(object_dir, position, object_name=None):
     obj_name = object_name if object_name else object_dir
@@ -57,7 +58,7 @@ def _spawn_single_object(object_dir, position, object_name=None):
     logger.info("Succesfully spawned")
 
 @wrap_logger
-def spawn(object_dir, positions, room_name=""):
+def spawn(object_dir, position_str, room_name=""):
     """Tries to spawn new object in Gazebo.
 
     Args:
@@ -69,7 +70,9 @@ def spawn(object_dir, positions, room_name=""):
     if room_name:
         _spawn_whole_room(room_name)
     else:
-        _spawn_single_object(object_dir, positions)
+        position = [float(v) for v in position_str.split(',')]
+        object_dir = path_to_models + object_dir + '/'
+        _spawn_single_object(object_dir, position)
 
 def set_parser():
     logger.info("Process is started...")

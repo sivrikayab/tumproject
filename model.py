@@ -27,8 +27,16 @@ class Model(CDP4DataCollection):
         self.model_name = model_path.split('/')[-1]
         self.position = position
         self.orientation = self._read_configuration()
+        self.pose = self._set_pose()
         self.bottom = ""
         self.top = ""
+
+    def _set_pose(self):
+        pose = Pose()
+        pose.position.x, pose.position.y, pose.position.z  = self.position
+        pose.orientation.x, pose.orientation.y, \
+            pose.orientation.z, pose.orientation.w = self.orientation
+        return pose
 
     def _read_configuration(self, config_file="configs.yaml"):
         """
@@ -36,7 +44,7 @@ class Model(CDP4DataCollection):
         """
         with open(self.model_path + config_file) as f:
             yaml_file = yaml.load(f)
-        return tuple(yaml_file["orientation"])
+        return tuple(yaml_file["orientation"].values())
 
     @staticmethod
     def generate_random_pose(x_mean=-1.25, x_std=0.5, y_mean=0.5, 
@@ -75,7 +83,7 @@ class Model(CDP4DataCollection):
                 parts.append('1')
             model_name = "_".join(parts)
 
-        res = self.__spawn_model_srv(model_name, sdf, "", self.position, reference_frame)
+        res = self._spawn_model_srv(model_name, sdf, "", self.pose, reference_frame)
         rospy.loginfo(res)
 
     def get_object_pose(self, object_name, reference_frame='world'):
@@ -85,7 +93,7 @@ class Model(CDP4DataCollection):
         :param object_name: the model name of the object
         :param reference_frame: the reference frame from which the pose will be calculated
         """
-        return self.__get_pose_srv(object_name, reference_frame).pose
+        return self._get_pose_srv(object_name, reference_frame).pose
 
     def delete_object(self, model_name):
         """
@@ -94,7 +102,7 @@ class Model(CDP4DataCollection):
         :param model_name: The name of the model to be deleted
         """
         try:
-            self.__delete_model_srv(model_name)
+            self._delete_model_srv(model_name)
         except:
             rospy.logerr("In delete model: %s" % model_name)
 
@@ -125,4 +133,4 @@ class Model(CDP4DataCollection):
         msg.scale.x = msg.scale.y = msg.scale.z = 1.0
 
         # publish message on ros topic
-        self.__set_model_state_pub.publish(msg)
+        self._set_model_state_pub.publish(msg)
