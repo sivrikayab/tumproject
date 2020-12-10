@@ -24,7 +24,7 @@ class Model(CDP4DataCollection):
         """
         super(Model, self).__init__()
         self.model_path = model_path
-        self.model_name = model_path.split('/')[-1]
+        self.model_name = model_path.split('/')[-2]
         self.position = position
         self.orientation = self._read_configuration()
         self.pose = self._set_pose()
@@ -46,23 +46,6 @@ class Model(CDP4DataCollection):
             yaml_file = yaml.load(f)
         return tuple(yaml_file["orientation"].values())
 
-    @staticmethod
-    def generate_random_pose(x_mean=-1.25, x_std=0.5, y_mean=0.5, 
-                            y_std=0.25, z_mean=0.25, z_std=1.0):
-        """
-        Generates a random pose within the specified xyz limits.
-        """
-        orientation = quaternion_from_euler(-np.pi, 0, np.random.uniform(-np.pi, np.pi))
-        pose = Pose()
-        pose.position.x = np.random.randn() * x_std + x_mean
-        pose.position.y = np.random.randn() * y_std + y_mean
-        pose.position.z = np.maximum(np.random.uniform() * z_std + z_mean, z_mean)
-        pose.orientation.x = orientation[0]
-        pose.orientation.y = orientation[1]
-        pose.orientation.z = orientation[2]
-        pose.orientation.w = orientation[3]
-        return pose
-
     def spawn(self, reference_frame='world'):
         """
         Spawns a new object in the environment
@@ -71,7 +54,7 @@ class Model(CDP4DataCollection):
         :param pose: The pose where the object will be spawned, relative to world coordinates
         :param reference_frame: the reference frame in which the pose will be considered
         """
-        with open(self.model_path + "/model.sdf", "r") as model:
+        with open(self.model_path + "model.sdf", "r") as model:
             sdf = model.read()
 
         model_name = self.model_name

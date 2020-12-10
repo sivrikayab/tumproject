@@ -53,7 +53,7 @@ def _spawn_single_object(object_dir, position, object_name=None):
         "Trying to spawn object {} in x={}, y={}, z={}...".format(
         obj_name, *position)
     )
-    obj = Model(object_dir)
+    obj = Model(object_dir, position)
     obj.spawn()
     logger.info("Succesfully spawned")
 
