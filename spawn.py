@@ -3,9 +3,11 @@ import argparse
 import logging
 from functools import wraps
 import numpy as np
+import yaml
 
 from cdp4_data_collection import CDP4DataCollection
 import geometry_msgs.msg as geom
+from model import Model
 
 from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge, CvBridgeError
@@ -21,9 +23,7 @@ logging.basicConfig(filename='logs.log',
                     level=logging.INFO)
 logger = logging.getLogger('spawn-model')
 
-
 path_to_models = os.getenv("HBP") + "/Models/"
-
 
 def wrap_logger(func):
     @wraps(func)
@@ -35,37 +35,29 @@ def wrap_logger(func):
             raise
     return inner
 
+def _spawn_whole_room(room_name, layout_file="layout.yaml"):
+    path_to_room = path_to_models + room_name + '/'
 
-def generate_eqdis_pos():
-    """ Generates points that are equally distant from each other.
-
-    Yields:
-        [type]: [description]
-    """
-    logger.info("Trying to generate position...")
-
-    cache = []
-    if not cache:
-        pos = _get_pose_at_origin()
-        cache.append(pos)
-        yield pos
-    else:
-        # Not implemented yet! TODO
-        pass
-
-
-def _get_pose_at_origin():
-    orientation = quaternion_from_euler(0, 0, 0)
-    pose = Pose()
-    pose.position.x, pose.position.y, pose.position.z = 0, 0, 0.25
-    pose.orientation.x = orientation[0]
-    pose.orientation.y = orientation[1]
-    pose.orientation.z = orientation[2]
-    pose.orientation.w = orientation[3]
-    return pose
+    with open(path_to_room + layout_file) as f:
+        yaml_file = yaml.load(f)
+    
+    for model in yaml_file["Layout"]:
+        position = model["position"].values()
+        obj_name = model["model"]
+        _spawn_single_object(path_to_room + obj_name, position, object_name=obj_name)
+        
+def _spawn_single_object(object_dir, position, object_name=None):
+    obj_name = object_name if object_name else object_dir
+    logger.info(
+        "Trying to spawn object {} in x={}, y={}, z={}...".format(
+        obj_name, *position)
+    )
+    obj = Model(object_dir)
+    obj.spawn()
+    logger.info("Succesfully spawned")
 
 @wrap_logger
-def spawn(object_name, room_name=""):
+def spawn(object_dir, positions, room_name=""):
     """Tries to spawn new object in Gazebo.
 
     Args:
@@ -74,25 +66,12 @@ def spawn(object_name, room_name=""):
         room_name (str, optional):
             name of the room folder. kitchen, bed_room etc. Defaults to "".
     """
-    model_dir = room_name + '/' + object_name if room_name else object_name
-    poses = generate_eqdis_pos()
-
-    if object_name is not None:
-        logger.info("Trying to spawn object {} in {}...".format(
-            object_name, room_name)
-        )
-        pose = next(poses)
-        obj_ = CDP4DataCollection(path_to_models)
-        obj_.add_object(model_dir, pose)
-        logger.info("Succesfully spawned {} model at {} position".format(
-            model_dir, pose)
-        )
+    if room_name:
+        _spawn_whole_room(room_name)
     else:
-        # Not implemented yet! TODO
-        logger.info("Trying to spawn all objects in {}...".format(room_name))
+        _spawn_single_object(object_dir, positions)
 
-
-if __name__ == '__main__':
+def set_parser():
     logger.info("Process is started...")
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -102,8 +81,16 @@ if __name__ == '__main__':
     parser.add_argument(
         "-o",
         "--object",
-        help="name of the object. If not given, all objects in the room will be spawned")
-    args = parser.parse_args()
+        help="directory of the object. If not given, all objects in the room will be spawned")
+    parser.add_argument(
+        "-p",
+        "--positions",
+        help="directory of the object. It is necessary for spawning a single object.")
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args = set_parser()
     room_name = args.room
     object_name = args.object
-    spawn(object_name, room_name)
+    positions = args.positions
+    spawn(object_name, positions, room_name)
