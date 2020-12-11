@@ -12,7 +12,7 @@ from cdp4_data_collection import CDP4DataCollection
 
 class Model(CDP4DataCollection):
 
-    root_path = os.getenv("HOME") + '/.gazebo/models/'
+    root_path =  os.getenv("HBP") + "/Models/"
 
     def __init__(self,
                 model_path,
@@ -26,23 +26,25 @@ class Model(CDP4DataCollection):
         self.model_path = model_path
         self.model_name = model_path.split('/')[-2]
         self.position = position
-        self.orientation = self._read_configuration()
-        self.pose = self._set_pose()
+        self.orientation = self._read_configuration(model_path)
+        self.pose = self._convert_to_pose(position, self.orientation)
         self.bottom = ""
         self.top = ""
 
-    def _set_pose(self):
+    @staticmethod
+    def _convert_to_pose(position, orientation):
         pose = Pose()
-        pose.position.x, pose.position.y, pose.position.z  = self.position
+        pose.position.x, pose.position.y, pose.position.z  = position
         pose.orientation.x, pose.orientation.y, \
-            pose.orientation.z, pose.orientation.w = self.orientation
+            pose.orientation.z, pose.orientation.w = orientation
         return pose
 
-    def _read_configuration(self, config_file="configs.yaml"):
+    @staticmethod
+    def _read_configuration(model_path, config_file="configs.yaml"):
         """
         reads configs.yaml file and assign parameters.
         """
-        with open(self.model_path + config_file) as f:
+        with open(model_path + config_file) as f:
             yaml_file = yaml.load(f)
         return tuple(yaml_file["orientation"].values())
 
@@ -100,13 +102,13 @@ class Model(CDP4DataCollection):
         vertical_position = np.arctan(rel_pos[2] / rel_pos[0])
         return horizontal_position, vertical_position
 
-    def set_object_pose(self, object_name, pose, store):
+    def set_object_pose(self, object_name, pose):
         """
         :param object_name: the name of the object model
         :param pose: the new pose to model should be set to
         """
-        if store:
-            self.spawned_objects.append(object_name)
+        # if store:
+        #     self.spawned_objects.append(object_name)
         
         msg = ModelState()
 
