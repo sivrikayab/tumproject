@@ -42,7 +42,7 @@ def _spawn_whole_room(room_name, layout_file="layout.yaml"):
         yaml_file = yaml.load(f)
     
     for model in yaml_file["Layout"]:
-        position = model["position"].values()
+        position = (model["position"]['x'], model["position"]['y'], model["position"]['z'])
         obj_name = model["model"]
         obj_dir = path_to_room + obj_name + '/'
         _spawn_single_object(obj_dir, position, object_name=obj_name)

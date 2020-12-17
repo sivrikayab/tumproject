@@ -9,6 +9,8 @@ from gazebo_msgs.msg import ModelState, ModelStates
 
 from cdp4_data_collection import CDP4DataCollection
 
+def angle_to_radian(angle):
+    return (np.pi*angle)/180 
 
 class Model(CDP4DataCollection):
 
@@ -36,7 +38,8 @@ class Model(CDP4DataCollection):
         pose = Pose()
         pose.position.x, pose.position.y, pose.position.z  = position
         pose.orientation.x, pose.orientation.y, \
-            pose.orientation.z, pose.orientation.w = orientation
+            pose.orientation.z = orientation
+        pose.orientation.w = 0.0
         return pose
 
     @staticmethod
@@ -71,15 +74,6 @@ class Model(CDP4DataCollection):
         res = self._spawn_model_srv(model_name, sdf, "", self.pose, reference_frame)
         rospy.loginfo(res)
 
-    def get_object_pose(self, object_name, reference_frame='world'):
-        """
-        Gets the current pose of an object relative to the world's coordinate frame
-
-        :param object_name: the model name of the object
-        :param reference_frame: the reference frame from which the pose will be calculated
-        """
-        return self._get_pose_srv(object_name, reference_frame).pose
-
     def delete_object(self, model_name):
         """
         Deletes a model from the environment
@@ -91,31 +85,41 @@ class Model(CDP4DataCollection):
         except:
             rospy.logerr("In delete model: %s" % model_name)
 
-    def __cart_to_ang(self, position):
-        """
-        Takes object's position as input and returns icub's absolute angles.
-        """
-        obj_pos = np.array([position.x, position.y, position.z])
-        cam_pos = np.array([2.15042024657, 1.23814627784, 1.33805071957])
-        rel_pos = np.subtract(obj_pos, cam_pos)
-        horizontal_position = np.arctan(rel_pos[1] / rel_pos[0])
-        vertical_position = np.arctan(rel_pos[2] / rel_pos[0])
-        return horizontal_position, vertical_position
 
-    def set_object_pose(self, object_name, pose):
-        """
-        :param object_name: the name of the object model
-        :param pose: the new pose to model should be set to
-        """
-        # if store:
-        #     self.spawned_objects.append(object_name)
-        
+class Adjuster(CDP4DataCollection):
+
+    def __init__(self, model_name):
+        super(Adjuster, self).__init__()
+        rospy.init_node('cdp4_data_collection')
+        self.model_name = model_name
+
+    def change_pose(self, x=None, y=None, z=None, ox=None, oy=None, oz=None):
+        object_pose = self.get_object_pose()
+        print "object has pose at {}".format(object_pose)
+        pose = Pose()
+        pose.position.x = x if x is not None else object_pose.position.x
+        pose.position.y = y if y is not None else object_pose.position.y
+        pose.position.z = z if z is not None else object_pose.position.z
+        pose.orientation.x = angle_to_radian(ox) if ox is not None else object_pose.orientation.x
+        pose.orientation.y = angle_to_radian(oy) if oy is not None else object_pose.orientation.y
+        pose.orientation.z = angle_to_radian(oz) if oz is not None else object_pose.orientation.z
+        self._set_object_pose(pose)
+
+    def _set_object_pose(self, pose):
         msg = ModelState()
 
-        msg.model_name = object_name
+        msg.model_name = self.model_name
         msg.reference_frame = 'world'
         msg.pose = pose
         msg.scale.x = msg.scale.y = msg.scale.z = 1.0
 
         # publish message on ros topic
         self._set_model_state_pub.publish(msg)
+
+    def get_object_pose(self, reference_frame='world'):
+        """
+        Gets the current pose of an object relative to the world's coordinate frame
+        :param object_name: the model name of the object
+        :param reference_frame: the reference frame from which the pose will be calculated
+        """
+        return self._get_pose_srv(self.model_name, reference_frame).pose
