@@ -107,13 +107,13 @@ class Adjuster(CDP4DataCollection):
     def _change_pose(self, x=None, y=None, z=None,
                     ox=None, oy=None, oz=None):
         object_pose = self.get_object_pose()
-        object_pose.position.x = x if x is not None else object_pose.position.x
-        object_pose.position.y = y if y is not None else object_pose.position.y
-        object_pose.position.z = z if z is not None else object_pose.position.z
-        object_pose.orientation.x = ox if ox is not None else object_pose.orientation.x
-        object_pose.orientation.y = oy if oy is not None else object_pose.orientation.y
-        object_pose.orientation.z = oz if oz is not None else object_pose.orientation.z
-        return object_pose
+        x_new = x if x is not None else object_pose.position.x
+        y_new = y if y is not None else object_pose.position.y
+        z_new = z if z is not None else object_pose.position.z
+        ox_new = ox if ox is not None else object_pose.orientation.x
+        oy_new = oy if oy is not None else object_pose.orientation.y
+        oz_new = oz if oz is not None else object_pose.orientation.z
+        return _convert_to_pose(x_new, y_new, z_new, ox_new, oy_new, oz_new)
 
     def change_pose(self, **kwargs):
         pose = self._change_pose(**kwargs)
