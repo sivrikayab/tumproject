@@ -9,8 +9,28 @@ from gazebo_msgs.msg import ModelState, ModelStates
 
 from cdp4_data_collection import CDP4DataCollection
 
-def angle_to_radian(angle):
+def a_to_r(angle):
+    """angle to radian
+
+    Args:
+        angle (int, float): angle in degree
+
+    Returns:
+        [int, float]: angle in radian
+    """
     return (np.pi*angle)/180 
+
+def _convert_to_pose(x=0.0, y=0.0, z=0.0, 
+                    ox=0.0, oy=0.0, oz=0.0):
+    orientations = quaternion_from_euler(a_to_r(ox),
+                                        a_to_r(oy),
+                                        a_to_r(oz))
+    pose = Pose()
+    pose.position.x, pose.position.y, pose.position.z  = (x,y,z)
+    pose.orientation.x, pose.orientation.y, \
+        pose.orientation.z, pose.orientation.w = orientations
+    return pose
+
 
 class Model(CDP4DataCollection):
 
@@ -21,26 +41,17 @@ class Model(CDP4DataCollection):
                 position=(0,0,0)):
         """
         Args:
-            model_path (str): path to model folder. 
-                <root_path>/CookingBench/
+            model_path (str): path to model folder. <root_path>/CookingBench/
         """
         super(Model, self).__init__()
         self.model_path = model_path
         self.model_name = model_path.split('/')[-2]
         self.position = position
         self.orientation = self._read_configuration(model_path)
-        self.pose = self._convert_to_pose(position, self.orientation)
+        x, y, z = position
+        self.pose = _convert_to_pose(x, y, z, *self.orientation)
         self.bottom = ""
         self.top = ""
-
-    @staticmethod
-    def _convert_to_pose(position, orientation):
-        pose = Pose()
-        pose.position.x, pose.position.y, pose.position.z  = position
-        pose.orientation.x, pose.orientation.y, \
-            pose.orientation.z = orientation
-        pose.orientation.w = 0.0
-        return pose
 
     @staticmethod
     def _read_configuration(model_path, config_file="configs.yaml"):
@@ -93,16 +104,19 @@ class Adjuster(CDP4DataCollection):
         rospy.init_node('cdp4_data_collection')
         self.model_name = model_name
 
-    def change_pose(self, x=None, y=None, z=None, ox=None, oy=None, oz=None):
+    def _change_pose(self, x=None, y=None, z=None,
+                    ox=None, oy=None, oz=None):
         object_pose = self.get_object_pose()
-        print "object has pose at {}".format(object_pose)
-        pose = Pose()
-        pose.position.x = x if x is not None else object_pose.position.x
-        pose.position.y = y if y is not None else object_pose.position.y
-        pose.position.z = z if z is not None else object_pose.position.z
-        pose.orientation.x = angle_to_radian(ox) if ox is not None else object_pose.orientation.x
-        pose.orientation.y = angle_to_radian(oy) if oy is not None else object_pose.orientation.y
-        pose.orientation.z = angle_to_radian(oz) if oz is not None else object_pose.orientation.z
+        object_pose.position.x = x if x is not None else object_pose.position.x
+        object_pose.position.y = y if y is not None else object_pose.position.y
+        object_pose.position.z = z if z is not None else object_pose.position.z
+        object_pose.orientation.x = ox if ox is not None else object_pose.orientation.x
+        object_pose.orientation.y = oy if oy is not None else object_pose.orientation.y
+        object_pose.orientation.z = oz if oz is not None else object_pose.orientation.z
+        return object_pose
+
+    def change_pose(self, **kwargs):
+        pose = self._change_pose(**kwargs)
         self._set_object_pose(pose)
 
     def _set_object_pose(self, pose):
