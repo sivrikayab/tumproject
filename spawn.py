@@ -35,18 +35,18 @@ def wrap_logger(func):
             raise
     return inner
 
-def _spawn_whole_room(room_name, layout_file="layout.yaml"):
+def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     path_to_room = path_to_models + room_name + '/'
-
     with open(path_to_room + layout_file) as f:
         yaml_file = yaml.load(f)
-    
-    for model in yaml_file["Layout"]:
+
+    layout = "Layout" + str(layout_no)
+    for model in yaml_file[layout]:
         position = (model["position"]['x'], model["position"]['y'], model["position"]['z'])
         obj_name = model["model"]
         obj_dir = path_to_room + obj_name + '/'
         _spawn_single_object(obj_dir, position, object_name=obj_name)
-        
+
 def _spawn_single_object(object_dir, position, object_name=None):
     obj_name = object_name if object_name else object_dir
     logger.info(
@@ -58,7 +58,7 @@ def _spawn_single_object(object_dir, position, object_name=None):
     logger.info("Succesfully spawned")
 
 @wrap_logger
-def spawn(object_dir, position_str, room_name=""):
+def spawn(object_dir, position_str, room_name="", layout_no=0):
     """Tries to spawn new object in Gazebo.
 
     Args:
@@ -68,7 +68,7 @@ def spawn(object_dir, position_str, room_name=""):
             name of the room folder. kitchen, bed_room etc. Defaults to "".
     """
     if room_name:
-        _spawn_whole_room(room_name)
+        _spawn_whole_room(room_name, layout_no)
     else:
         position = [float(v) for v in position_str.split(',')]
         object_dir = path_to_models + object_dir + '/'
@@ -89,11 +89,17 @@ def set_parser():
         "-p",
         "--positions",
         help="directory of the object. It is necessary for spawning a single object.")
+    parser.add_argument(
+        "-l",
+        "--layout",
+        help="which layout you want to spawn. Takes integer value."
+    )
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = set_parser()
     room_name = args.room
-    object_name = args.object
+    object_dir = args.object
     positions = args.positions
-    spawn(object_name, positions, room_name)
+    layout_no = args.layout
+    spawn(object_dir, positions, room_name, layout_no)
