@@ -1,6 +1,7 @@
 import os
 import argparse
 import logging
+import random
 from functools import wraps
 import numpy as np
 import yaml
@@ -35,17 +36,39 @@ def wrap_logger(func):
             raise
     return inner
 
+def random_path_yielder(path):
+    """It goes into the path and randomly yields a sub-directory.
+
+    Args:
+        path (str)
+    """
+    current_subs = [i[1] for i in os.walk(path)][0]
+    current_subs_validated = [name for name in current_subs 
+                                if '0' <= name[-1] <='9']
+    random_sub_name = random.choice(current_subs_validated)
+    while len(current_subs_validated) > 0 :
+        current_subs_validated.remove(random_sub_name)
+        yield random_sub_name
+
 def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     path_to_room = path_to_models + room_name + '/'
     with open(path_to_room + layout_file) as f:
         yaml_file = yaml.load(f)
+    
+    seen_folder = {}
 
     layout = "Layout" + str(layout_no)
-    for model in yaml_file[layout]:
-        position = (model["position"]['x'], model["position"]['y'], model["position"]['z'])
-        obj_name = model["model"]
-        obj_dir = path_to_room + obj_name + '/'
-        _spawn_single_object(obj_dir, position, object_name=obj_name)
+    for entity in yaml_file[layout]:
+        folder = entity["folder"]
+        positions = entity["position"]
+        absolute_path = path_to_room + folder + '/'
+        if folder[-1] == 's': # we go through sub models
+            if folder not in seen_folder: # if the sub-dir seen before
+                seen_folder[folder] = random_path_yielder(absolute_path)
+            folder = next(seen_folder[folder])
+            absolute_path += folder + '/'
+        position = (positions['x'], positions['y'], positions['z'])
+        _spawn_single_object(absolute_path, position, object_name=folder)
 
 def _spawn_single_object(object_dir, position, object_name=None):
     obj_name = object_name if object_name else object_dir
