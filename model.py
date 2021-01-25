@@ -38,7 +38,8 @@ class Model(CDP4DataCollection):
 
     def __init__(self,
                 model_path,
-                position=(0,0,0)):
+                position=(0,0,0),
+                orientation=None):
         """
         Args:
             model_path (str): path to model folder. <root_path>/CookingBench/
@@ -47,7 +48,8 @@ class Model(CDP4DataCollection):
         self.model_path = model_path
         self.model_name = model_path.split('/')[-2]
         self.position = position
-        self.orientation = self._read_configuration(model_path)
+        self.orientation = self._read_configuration(model_path) \
+                            if orientation is None else orientation
         x, y, z = position
         self.pose = _convert_to_pose(x, y, z, *self.orientation)
         self.bottom = ""
@@ -58,9 +60,12 @@ class Model(CDP4DataCollection):
         """
         reads configs.yaml file and assign parameters.
         """
-        with open(model_path + config_file) as f:
-            yaml_file = yaml.load(f)
-        return tuple(yaml_file["orientation"].values())
+        try:
+            with open(model_path + config_file) as f:
+                yaml_file = yaml.load(f)
+            return tuple(yaml_file["orientation"].values())
+        except Exception:
+            return None
 
     def spawn(self, reference_frame='world'):
         """

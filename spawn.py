@@ -1,4 +1,5 @@
 import os
+import time
 import argparse
 import logging
 import random
@@ -45,10 +46,10 @@ def random_path_yielder(path):
     current_subs = [i[1] for i in os.walk(path)][0]
     current_subs_validated = [name for name in current_subs 
                                 if '0' <= name[-1] <='9']
-    random_sub_name = random.choice(current_subs_validated)
-    while len(current_subs_validated) > 0 :
-        current_subs_validated.remove(random_sub_name)
+    while len(current_subs_validated) > 0:
+        random_sub_name = random.choice(current_subs_validated)
         yield random_sub_name
+        current_subs_validated.remove(random_sub_name)
 
 def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     path_to_room = path_to_models + room_name + '/'
@@ -56,29 +57,31 @@ def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
         yaml_file = yaml.load(f)
     
     seen_folder = {}
-
     layout = "Layout" + str(layout_no)
     for entity in yaml_file[layout]:
         folder = entity["folder"]
         positions = entity["position"]
         absolute_path = path_to_room + folder + '/'
-        if folder[-1] == 's': # we go through sub models
+        if "has_subfolder" in entity and entity["has_subfolder"]: # we go through sub models
             if folder not in seen_folder: # if the sub-dir seen before
                 seen_folder[folder] = random_path_yielder(absolute_path)
             folder = next(seen_folder[folder])
             absolute_path += folder + '/'
         position = (positions['x'], positions['y'], positions['z'])
-        _spawn_single_object(absolute_path, position, object_name=folder)
+        orientation = (positions['ox'], positions['oy'], positions['oz']) \
+                        if len({'ox','oy','oz'} & set(positions.keys()))==3 else None
+        _spawn_single_object(absolute_path, position, orientation, object_name=folder, )
 
-def _spawn_single_object(object_dir, position, object_name=None):
+def _spawn_single_object(object_dir, position, orientation, object_name=None):
     obj_name = object_name if object_name else object_dir
     logger.info(
         "Trying to spawn object {} in x={}, y={}, z={}...".format(
         obj_name, *position)
     )
-    obj = Model(object_dir, position)
+    obj = Model(object_dir, position, orientation)
     obj.spawn()
     logger.info("Succesfully spawned")
+    time.sleep(1)
 
 @wrap_logger
 def spawn(object_dir, position_str, room_name="", layout_no=0):
@@ -95,7 +98,7 @@ def spawn(object_dir, position_str, room_name="", layout_no=0):
     else:
         position = [float(v) for v in position_str.split(',')]
         object_dir = path_to_models + object_dir + '/'
-        _spawn_single_object(object_dir, position)
+        _spawn_single_object(object_dir, position, None)
 
 def set_parser():
     logger.info("Process is started...")
