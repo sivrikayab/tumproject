@@ -108,7 +108,8 @@ Layout0:
 ````
  
  In this layout, ```x,y,z``` represent cartesian coordinate and ```ox,oy,oz``` represent euler
- angles for orientations. ``has_subfolder`` indicated the TableItems folder contains sub models
+ angles for orientations. If these values are not present in layout file 
+  then the script will look for the `configs.yaml` file under the related object directory. ``has_subfolder`` indicated the TableItems folder contains sub models
  that are going to be chosen randomly and spawned at the given coordinates. More than one Layout 
  configuration can also be defines as follow:
  
