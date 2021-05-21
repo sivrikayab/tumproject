@@ -10,6 +10,7 @@ import yaml
 from cdp4_data_collection import CDP4DataCollection
 import geometry_msgs.msg as geom
 from model import Model
+from model import Adjuster
 
 from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge, CvBridgeError
@@ -51,6 +52,15 @@ def random_path_yielder(path):
         yield random_sub_name
         current_subs_validated.remove(random_sub_name)
 
+def move_robot(pose):
+
+    icub = Adjuster("icub")
+    
+    time.sleep(1)
+
+    icub.change_pose(x=pose[0], y=pose[1], z=pose[2], ox=pose[3], oy=pose[4], oz=pose[5])
+    
+
 def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     path_to_room = path_to_models + room_name + '/'
     with open(path_to_room + layout_file) as f:
@@ -60,6 +70,11 @@ def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     layout = "Layout" + str(layout_no)
     for entity in yaml_file[layout]:
         folder = entity["folder"]
+        if(folder == "icub"):
+            positions = entity["positions"]
+            position = random.choice(positions.values())
+            move_robot((position["x"], position["y"], position["z"], position["ox"], position["oy"], position["oz"]))
+            continue
         positions = entity["position"]
         absolute_path = path_to_room + folder + '/'
         if "has_subfolder" in entity and entity["has_subfolder"]: # we go through sub models
