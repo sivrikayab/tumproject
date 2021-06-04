@@ -6,6 +6,7 @@ import random
 from functools import wraps
 import numpy as np
 import yaml
+import shelve
 
 from cdp4_data_collection import CDP4DataCollection
 import geometry_msgs.msg as geom
@@ -65,6 +66,10 @@ def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
     path_to_room = path_to_models + room_name + '/'
     with open(path_to_room + layout_file) as f:
         yaml_file = yaml.load(f)
+
+    room_objects = shelve.open("room_objects")
+    room_objects["furniture"] = []
+    room_objects.close()
     
     seen_folder = {}
     layout = "Layout" + str(layout_no)
@@ -87,6 +92,17 @@ def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
                         if len({'ox','oy','oz'} & set(positions.keys()))==3 else None
         _spawn_single_object(absolute_path, position, orientation, object_name=folder, )
 
+def _delete_whole_room():
+    room_objects = shelve.open("room_objects")
+    furnitures = room_objects["furniture"]
+
+    for furniture in furnitures:
+        command = "gz model -m {model_name} -d".format(model_name = furniture)
+        os.system(command)
+    
+    room_objects["furniture"] = []
+    room_objects.close()
+
 def _spawn_single_object(object_dir, position, orientation, object_name=None):
     obj_name = object_name if object_name else object_dir
     logger.info(
@@ -95,6 +111,15 @@ def _spawn_single_object(object_dir, position, orientation, object_name=None):
     )
     obj = Model(object_dir, position, orientation)
     obj.spawn()
+
+    room_objects = shelve.open("room_objects")
+    temp = room_objects["furniture"]
+    temp.append(obj_name)
+    room_objects["furniture"] = temp
+    room_objects.close()
+
+    print(obj_name)
+
     logger.info("Succesfully spawned")
     time.sleep(1)
 

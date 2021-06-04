@@ -92,7 +92,7 @@ class Model(CDP4DataCollection):
 
     def delete_object(self, model_name):
         """
-        Deletes a model from the environment
+        Deletes a model from the enviroment
 
         :param model_name: The name of the model to be deleted
         """
