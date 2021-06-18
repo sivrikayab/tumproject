@@ -39,6 +39,10 @@ def wrap_logger(func):
             raise
     return inner
 
+blank_position = (20,20,0)
+blank_orientation = (0,0,0)
+blank_pose = (20,20,0,0,0,0)
+
 def random_path_yielder(path):
     """It goes into the path and randomly yields a sub-directory.
 
@@ -82,10 +86,7 @@ def _spawn_all_objects():
     room_objects = shelve.open("room_objects")
     room_objects["furniture"] = []
     room_objects.close()
-
-    blank_position = (20,20,0)
-    blank_orientation = (0,0,0)
-
+    
     rooms = ["kitchen", "living_room", "bed_room", "office"]
 
     for room in rooms:
@@ -139,7 +140,10 @@ def _build_whole_room(room_name, layout_no, layout_file="layout.yaml"):
                 seen_folder[folder] = random_path_yielder(absolute_path)
             folder = next(seen_folder[folder])
             absolute_path += folder + '/'
+        position = (positions['x'], positions['y'], positions['z'])
+        orientation = (positions['ox'], positions['oy'], positions['oz'])
         pose = (positions["x"], positions["y"], positions["z"], positions["ox"], positions["oy"], positions["oz"])
+        _spawn_single_object(absolute_path, position, orientation, object_name=folder, )
         move_object(folder, pose)
 
 
@@ -176,8 +180,6 @@ def _spawn_whole_room(room_name, layout_no, layout_file="layout.yaml"):
 def _debuild_whole_room():
     room_objects = shelve.open("room_objects")
     furnitures = room_objects["furniture"]
-
-    blank_pose = (10,10,0,0,0,0)
 
     for furniture in furnitures:
         move_object(furniture,  blank_pose)
@@ -261,6 +263,11 @@ def set_parser():
         "-a",
         "--all",
         help="Spawn all objects in the experiment room folders."
+    )
+    parser.add_argument(
+        "-s",
+        "--spawn",
+        help="Spawn mode, instead of building the layout from existing objects in blank position, directly spawn them onto their desired position."
     )
     parser.add_argument(
         "-d",
