@@ -272,7 +272,8 @@ def set_parser():
     parser.add_argument(
         "-d",
         "--debuild",
-        help="Move all objects in scene to a blank position, if 1."
+        action="store_true",
+        help="Move all objects in scene to a blank position."
     )
     return parser.parse_args()
 
@@ -280,7 +281,7 @@ def set_parser():
 if __name__ == '__main__':
     args = set_parser()
     debuild = args.debuild
-    if debuild == "1":
+    if debuild:
         print("Debuilding the room...")
         _debuild_whole_room()
     else:
